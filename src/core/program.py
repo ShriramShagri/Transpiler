@@ -40,7 +40,7 @@ class Program:
         if 'include' in line:
             newLine += '#include<' + line.split(' ')[1].strip('\n') + '>'
             return newLine
-        return line
+        return line + ';'
 
     def _checkIndent(self, line):
         count = 0
