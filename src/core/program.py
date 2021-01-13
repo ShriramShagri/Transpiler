@@ -3,6 +3,7 @@ from .keywords import K_SET_1
 class Program:
     def __init__(self, inputLines):
         self.inputLines = inputLines
+        self.comment = False
         self.indent = 0
         self.brackets = []
         self.programlines = []
@@ -11,17 +12,49 @@ class Program:
         return '\n'.join(self.programlines)
     
     def generate(self, path):
+        temp = []
         for line in self.inputLines:
             if line == '\n':
-                self.programlines.append('\n')
+                continue
+            elif '/*' in line:
+                t = line.split('/*')
+                temp.extend([t[0], '/*'+t[1]])
+            elif '//' in line:
+                if line.strip()[:2] == '//':
+                    temp.append(line)
+                else:
+                    count = 0
+                    for i in line:
+                        if i == ' ':
+                            count += 1
+                        else:
+                            break
+                    t = line.split('//')
+                    temp.extend([t[0], (' '*count)+'//'+t[1]])
             else:
-                line = line.strip('\n').rstrip()
-                line = self._indent(line)
-                line, linetype = self._checkKeywords(line)
-                if linetype:
-                    line, linetype = self._colon(line)
+                temp.append(line)
+        self.inputLines = list(filter(lambda x: False if x=='\n' or x == '' else True, temp))
+        for line in self.inputLines:
+            if self.comment:
+                if '*/' in line:
+                    self.comment = False
+                self.programlines.append(line)
+            else:
+                if line == '\n' or '//' in line:
+                    self.programlines.append(line)
+                elif '/*' in line:
+                    self.programlines.append(line)
+                    self.comment = True
+                else:
+                    line = line.strip('\n').rstrip()
+                    if line == '':
+                        continue
+                    line = self._indent(line)
+                    line, linetype = self._checkKeywords(line)
                     if linetype:
-                        line = self._semicolon(line)
+                        line, linetype = self._colon(line)
+                        if linetype:
+                            line = self._semicolon(line)
         
         if self.indent > 0:
             self.programlines.extend(['}']*int(self.indent))
@@ -36,10 +69,6 @@ class Program:
         for i in line:
             if i == ' ':
                 count += 1
-            # elif i =='\\':
-            #     print('inside')
-            #     count += 4
-            #     line = line.replace('\t', '    ', 1)
             else:
                 break
         if (count/4).is_integer():
